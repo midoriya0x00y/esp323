@@ -1,0 +1,69 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// Configurações de rede e MQTT
+const char* ssid = "SUA_REDE_WIFI";
+const char* password = "SUA_SENHA_WIFI";
+const char* mqttBroker = "ENDERECO_DO_BROKER"; // IP ou URL do broker MQTT
+const int mqttPort = 1883; // Porta padrão do MQTT
+const char* mqttClientId = "ESP32_Cliente";
+const char* mqttTopic = "meuTopico"; // Tópico para comunicação
+
+// Instância do cliente MQTT
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+
+// Função para conexão ao broker MQTT
+void connectToMQTTBroker() {
+  // Loop até conectar-se ao broker
+  while (!mqttClient.connected()) {
+    Serial.println("Conectando ao broker MQTT...");
+    if (mqttClient.connect(mqttClientId)) {
+      Serial.println("Conectado ao broker!");
+      // Inscreva-se nos tópicos que deseja receber mensagens
+      mqttClient.subscribe(mqttTopic);
+    } else {
+      Serial.print("Falha na conexão ao broker. Erro: ");
+      Serial.println(mqttClient.state());
+      delay(2000);
+    }
+  }
+}
+
+// Função callback para tratar mensagens recebidas
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Mensagem recebida no tópico: ");
+  Serial.println(topic);
+  Serial.print("Conteúdo: ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Conecte-se à rede Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Conectando à rede WiFi...");
+  }
+  Serial.println("Conectado à rede WiFi!");
+
+  // Configuração do cliente MQTT
+  mqttClient.setServer(mqttBroker, mqttPort);
+  mqttClient.setCallback(callback);
+}
+
+void loop() {
+  if (!mqttClient.connected()) {
+    connectToMQTTBroker();
+  }
+  mqttClient.loop();
+
+  // Exemplo de publicação de mensagem a cada 5 segundos
+  mqttClient.publish(mqttTopic, "Mensagem do ESP32!");
+  delay(5000);
+}
