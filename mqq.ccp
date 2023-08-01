@@ -1,9 +1,6 @@
 #include <WiFi.h>
 #include <DHTesp.h>
 #include <PubSubClient.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
 // Substitua pelas suas informações de rede
 const char* ssid = "SUA_REDE_SSID";
@@ -26,12 +23,6 @@ const int mqttPort = 1883;
 
 // Tópico MQTT para publicar as leituras
 const char* mqttTopic = "esp32/temperatura";
-
-// Configuração do display OLED
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 void conectarWiFi() {
   Serial.print("Conectando ao WiFi...");
@@ -85,17 +76,6 @@ void setup() {
   dht.setup(DHTPIN, DHTTYPE);
 
   client.setServer(mqttBroker, mqttPort);
-
-  // Inicializa o display OLED
-  if (!display.begin(SSD1306_I2C_ADDRESS, OLED_RESET)) {
-    Serial.println("Falha ao inicializar o display OLED");
-    while (1);
-  }
-  display.display();
-  delay(2000);
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
 }
 
 void loop() {
@@ -120,17 +100,6 @@ void loop() {
 
     // Envia os dados para o ThingSpeak
     enviarParaThingSpeak(temperatura, umidade);
-
-    // Exibe as leituras no display OLED
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println("Temperatura:");
-    display.println(temperatura, 2);
-    display.println("C");
-    display.println("Umidade:");
-    display.println(umidade, 2);
-    display.println("%");
-    display.display();
   } else {
     Serial.println("Falha na leitura do sensor DHT22");
   }
